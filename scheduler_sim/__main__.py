@@ -7,6 +7,7 @@ from typing import Sequence
 
 from . import evaluation, schedulers, workload
 from .simulator import SimulationConfig
+from .idle_minimizing_scheduler import IdleMinimizingScheduler
 
 
 def parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -33,6 +34,7 @@ def parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=0.0,
         help="Cost of a context switch (time units) added to CPU busy time.",
     )
+    parser.add_argument("--m-factor", type=float, default=1.5, help="Deadline factor for IdleMinimizingScheduler.")
     return parser.parse_args(argv)
 
 
@@ -85,6 +87,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         ("FCFS", schedulers.FcfsScheduler),
         ("EDF", schedulers.EdfScheduler),
         ("LRS", schedulers.LeastSlackScheduler),
+        ("IdleMin", lambda: IdleMinimizingScheduler(m_factor=args.m_factor)),
     ]
 
     outcomes = evaluation.evaluate_suite(factories, tasks, config=config)
