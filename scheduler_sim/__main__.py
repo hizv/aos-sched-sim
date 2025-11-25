@@ -5,7 +5,7 @@ from collections.abc import Callable
 from random import Random
 from typing import Sequence
 
-from . import evaluation, schedulers, workload
+from . import evaluation, schedulers, workload, dynamic_profiler_scheduler
 from .simulator import SimulationConfig
 
 
@@ -85,6 +85,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         ("FCFS", schedulers.FcfsScheduler),
         ("EDF", schedulers.EdfScheduler),
         ("LRS", schedulers.LeastSlackScheduler),
+        ("DYN", dynamic_profiler_scheduler.DynamicRuntimeProfilerScheduler),
     ]
 
     outcomes = evaluation.evaluate_suite(factories, tasks, config=config)
