@@ -66,11 +66,21 @@ class EdfScheduler(Scheduler):
 
 
 class LeastSlackScheduler(Scheduler):
-    """Preemptive scheduler that prioritises least remaining slack time."""
+    """
+    Preemptive scheduler that prioritises least relative slack time.
+
+    Relative slack is defined as the slack time divided by the deadline offset
+    from the arrival time. This normalizes slack against the urgency defined by
+    the task's deadline.
+
+    Priority = slack / (deadline - arrival_time)
+
+    A lower value indicates a higher priority.
+    """
 
     def __init__(self, clamp_fn: Callable[[float], float] | None = None) -> None:
         self._ready: list[TaskState] = []
-        self._clamp_fn = clamp_fn if clamp_fn is not None else lambda slack: slack
+        self._clamp_fn = clamp_fn
 
     def add_task(self, task: TaskState) -> None:
         self._ensure_ready(task)
@@ -105,8 +115,15 @@ class LeastSlackScheduler(Scheduler):
         return min(self._ready, key=lambda task: self._priority(task, now))
 
     def _priority(self, task: TaskState, now: float) -> float:
+        if task.deadline is None:
+            return float("inf")
+
         slack = task.slack(now)
-        return self._clamp_fn(slack)
+        deadline_offset = task.deadline - task.arrival_time
+
+        if deadline_offset <= 0:
+            return float("-inf") if slack < 0 else slack
+        return slack / deadline_offset
 
     def _ensure_ready(self, task: TaskState) -> None:
         if task.is_complete():
